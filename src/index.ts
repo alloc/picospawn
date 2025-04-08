@@ -18,14 +18,17 @@ function decorateError(
   proc: ChildProcess
 ): ChildProcessError {
   let message = `The command spawned as:${EOL}${EOL}`
-  message += `  \`${proc.spawnargs.join(' ')}\`${EOL}${EOL}`
+  message += `  ${proc.spawnargs.join(' ')}${EOL}${EOL}`
   message += `exited with:${EOL}${EOL}`
-  message += `  \`{ signal: '${proc.signalCode}', code: ${proc.exitCode} }\` ${EOL}${EOL}`
+  message += `  signal=${JSON.stringify(proc.signalCode)} code=${proc.exitCode}${EOL}${EOL}`
   message += `with the following trace:${EOL}`
 
   error.name = 'ChildProcessError'
   error.message = message
-  error.proc = proc
+  Object.defineProperty(error, 'proc', {
+    enumerable: true,
+    value: proc,
+  })
 
   return error
 }
