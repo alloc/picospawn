@@ -102,6 +102,10 @@ const extend =
   }
 
 const $: any = extend()
+if (typeof module !== 'undefined') {
+  module.exports = $
+}
+
 $.extend = extend
 $.json = $.extend({ json: true })
 
