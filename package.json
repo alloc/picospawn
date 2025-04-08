@@ -1,0 +1,41 @@
+{
+  "name": "picospawn",
+  "type": "module",
+  "version": "0.0.0",
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.cts",
+  "exports": {
+    "require": {
+      "types": "./dist/index.d.cts",
+      "default": "./dist/index.cjs"
+    },
+    "types": "./dist/index.d.ts",
+    "default": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "MIT",
+  "author": "Alec Larson",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aleclarson/picospawn.git"
+  },
+  "prettier": "@alloc/prettier-config",
+  "scripts": {
+    "dev": "rimraf dist && tsup --sourcemap --watch",
+    "build": "rimraf dist && tsup",
+    "format": "prettier --write .",
+    "lint": "tsc-lint",
+    "prepublishOnly": "pnpm build"
+  },
+  "devDependencies": {
+    "@alloc/prettier-config": "^1.0.0",
+    "@types/node": "^22.14.0",
+    "prettier": "^3.5.3",
+    "rimraf": "^6.0.1",
+    "tsc-lint": "^0.1.8",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.3"
+  }
+}
