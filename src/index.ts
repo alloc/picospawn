@@ -94,10 +94,11 @@ const extend =
 
     return new Proxy(promise, {
       get(target: any, prop: string | symbol) {
-        if (proc && (proc as any)[prop]) {
-          return (proc as any)[prop]
-        }
-        return target[prop]
+        const resolve = (obj: any, prop: string | symbol, value = obj[prop]) =>
+          typeof value === 'function' ? value.bind(obj) : value
+
+        const value = resolve(proc, prop)
+        return value !== undefined ? value : resolve(target, prop)
       },
     }) as TinyspawnPromise
   }
