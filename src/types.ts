@@ -2,8 +2,6 @@ import { ChildProcess, SpawnOptions } from 'node:child_process'
 
 export interface ChildProcessError extends Error {
   name: 'ChildProcessError'
-  command: string
-  args: string[]
   proc: ChildProcess
 }
 

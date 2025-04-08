@@ -13,21 +13,18 @@ function streamToString(stream: NodeJS.ReadableStream | null) {
   return () => Buffer.concat(chunks).toString().trim()
 }
 
-function createDecoratedError(
-  command: string,
-  args: string[],
+function decorateError(
+  error: ChildProcessError,
   proc: ChildProcess
 ): ChildProcessError {
   let message = `The command spawned as:${EOL}${EOL}`
-  message += `  \`${command}  ${args.join(' ')}\`${EOL}${EOL}`
+  message += `  \`${proc.spawnfile} ${proc.spawnargs.join(' ')}\`${EOL}${EOL}`
   message += `exited with:${EOL}${EOL}`
   message += `  \`{ signal: '${proc.signalCode}', code: ${proc.exitCode} }\` ${EOL}${EOL}`
   message += `with the following trace:${EOL}`
 
-  const error = new Error(message) as ChildProcessError
   error.name = 'ChildProcessError'
-  error.command = command
-  error.args = args
+  error.message = message
   error.proc = proc
 
   return error
@@ -70,6 +67,7 @@ const extend =
 
     let proc: ChildProcess & { error?: Error }
 
+    const trace = new Error()
     const promise = new Promise<ChildProcess>((resolve, reject) => {
       proc = spawn(command, filteredArgs, options ?? {})
 
@@ -82,7 +80,7 @@ const extend =
         defineOutputProperty(proc, 'stderr', stderr)
 
         if (exitCode !== 0) {
-          const error = createDecoratedError(command, filteredArgs, proc)
+          const error = decorateError(trace as ChildProcessError, proc)
           if (options?.reject !== false) {
             proc.error = error
             return reject(error)
