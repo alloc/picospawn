@@ -18,7 +18,7 @@ function decorateError(
   proc: ChildProcess
 ): ChildProcessError {
   let message = `The command spawned as:${EOL}${EOL}`
-  message += `  \`${proc.spawnfile} ${proc.spawnargs.join(' ')}\`${EOL}${EOL}`
+  message += `  \`${proc.spawnargs.join(' ')}\`${EOL}${EOL}`
   message += `exited with:${EOL}${EOL}`
   message += `  \`{ signal: '${proc.signalCode}', code: ${proc.exitCode} }\` ${EOL}${EOL}`
   message += `with the following trace:${EOL}`
