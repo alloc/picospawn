@@ -19,7 +19,7 @@
   "author": "Alec Larson",
   "repository": {
     "type": "git",
-    "url": "https://github.com/aleclarson/picospawn.git"
+    "url": "https://github.com/alloc/picospawn.git"
   },
   "prettier": "@alloc/prettier-config",
   "scripts": {
