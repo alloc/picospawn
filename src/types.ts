@@ -10,6 +10,16 @@ export interface TinyspawnOptions extends SpawnOptions {
   reject?: boolean
 }
 
+export interface TinyspawnSyncOptions extends SpawnOptions {
+  /**
+   * Set this to `false` to prevent the current process from exiting when the
+   * child process exits unexpectedly.
+   *
+   * @default true
+   */
+  exit?: boolean
+}
+
 export interface TinyspawnResult<Stdout = string>
   extends Omit<ChildProcess, 'stdout' | 'stderr'> {
   stdout: Stdout

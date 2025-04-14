@@ -1,11 +1,48 @@
-import { ChildProcess, spawn } from 'node:child_process'
+import {
+  ChildProcess,
+  spawn as nodeSpawn,
+  spawnSync as nodeSpawnSync,
+  SpawnSyncReturns,
+} from 'node:child_process'
 import { EOL } from 'node:os'
 import {
   ChildProcessError,
   Tinyspawn,
   TinyspawnOptions,
   TinyspawnPromise,
+  TinyspawnSyncOptions,
 } from './types'
+
+// The function responsible for processing the spawn arguments before passing
+// them to the native spawn function.
+function run<TOptions, TResult>(
+  spawn: (command: string, args: string[], options: TOptions) => TResult,
+  command: string,
+  args?: (string | false | null | undefined)[] | TOptions,
+  options?: TOptions,
+  defaultOptions?: TOptions
+): TResult {
+  let stringArgs: string[] | undefined
+  if (args) {
+    if (Array.isArray(args)) {
+      stringArgs = args.filter(Boolean) as string[]
+    } else {
+      options = args
+    }
+  }
+  if (command.includes(' ')) {
+    const args = command.split(' ')
+    for (let i: number; (i = args.indexOf('%s')) >= 0; ) {
+      args[i] = stringArgs?.shift() ?? ''
+    }
+    command = args.shift()!
+    stringArgs = stringArgs ? [...args, ...stringArgs] : args
+  }
+  return spawn(command, stringArgs ?? [], {
+    ...defaultOptions,
+    ...options,
+  } as TOptions)
+}
 
 function streamToString(stream: NodeJS.ReadableStream | null) {
   const chunks: Buffer[] = []
@@ -44,36 +81,25 @@ const defineOutputProperty = (
     get: () => (options?.json ? JSON.parse(read()) : read()),
   })
 
-type Args = (string | false | null | undefined)[]
-
-const extend =
+const createAsyncSpawn =
   (defaultOptions?: TinyspawnOptions) =>
   (
-    input: string,
-    args?: Args | TinyspawnOptions,
+    command: string,
+    args?: (string | false | null | undefined)[] | TinyspawnOptions,
     options?: TinyspawnOptions
   ) => {
-    if (!Array.isArray(args)) {
-      options = args as TinyspawnOptions
-      args = undefined
+    const proc = run(
+      nodeSpawn,
+      command,
+      args,
+      options,
+      defaultOptions
+    ) as ChildProcess & {
+      error?: Error
     }
-    if (defaultOptions) {
-      options = {
-        ...defaultOptions,
-        ...options,
-      }
-    }
-
-    const [command, ...filteredArgs] = (input.split(' ') as Args)
-      .concat((args as Args) || [])
-      .filter(Boolean) as string[]
-
-    let proc: ChildProcess & { error?: Error }
 
     const trace = new Error()
     const promise = new Promise<ChildProcess>((resolve, reject) => {
-      proc = spawn(command, filteredArgs, options ?? {})
-
       const stdout = streamToString(proc.stdout)
       const stderr = streamToString(proc.stderr)
 
@@ -104,15 +130,7 @@ const extend =
     }) as TinyspawnPromise
   }
 
-const $: any = extend()
-if (typeof module !== 'undefined') {
-  module.exports = $
-}
-
-$.extend = extend
-$.json = $.extend({ json: true })
-
-export default $ as Tinyspawn<string> & {
+const spawn = createAsyncSpawn() as Tinyspawn<string> & {
   extend(
     defaults?: TinyspawnOptions & { json?: false | undefined }
   ): Tinyspawn<string>
@@ -120,4 +138,55 @@ export default $ as Tinyspawn<string> & {
   json: Tinyspawn<unknown>
 }
 
+spawn.extend = createAsyncSpawn
+spawn.json = createAsyncSpawn({ json: true })
+
 export type * from './types'
+
+export default spawn
+
+/**
+ * The `spawnSync` function is purpose-built for replacing Shell scripts with
+ * Node.js by providing a simple way to block on a child process, exit if it
+ * fails, and return its output as a string.
+ *
+ * Its call signature is identical to picospawn's `spawn` functions.
+ *
+ * I recommend importing it like this: `{ spawnSync as $ }`
+ *
+ * Set the `exit` option to `false` to prevent the current process from exiting
+ * when the child process exits unexpectedly. It also affects the return type of
+ * the function.
+ */
+export function spawnSync<Options extends TinyspawnSyncOptions>(
+  command: string,
+  args?: (string | false)[] | Options,
+  options?: Options
+): Options['exit'] extends false ? SpawnSyncReturns<string> : string {
+  const result = run(nodeSpawnSync, command, args, options, {
+    stdio: 'inherit',
+    encoding: 'utf-8',
+  })
+  if (!options && !Array.isArray(args)) {
+    options = args
+  }
+  if (options?.exit !== false) {
+    if (result.stderr?.length) {
+      console.error(result.stderr.toString())
+    }
+    if (result.signal) {
+      process.exit(result.signal)
+    }
+    if (result.status !== 0) {
+      process.exit(result.status)
+    }
+    return result.stdout as any
+  }
+  return result as any
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = spawn
+  module.exports.default = spawn
+  module.exports.spawnSync = spawnSync
+}
