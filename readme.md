@@ -151,6 +151,17 @@ const { exitCode } = await proc
 console.log(exitCode) // Output: 1
 ```
 
+#### Argument arrays can be nested.
+
+Especially useful for conditional arguments, since you can do `condition && ['foo', 'bar']` where the arguments won't be used if the condition is false.
+
+```ts
+import $ from 'picospawn'
+
+const { stdout } = await $('echo %s baz', ['foo bar', ['qux']])
+console.log(stdout) // Output: foo bar baz qux
+```
+
 ## Prior Art
 
 - [tinyspawn](https://github.com/microlinkhq/tinyspawn)
