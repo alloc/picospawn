@@ -148,6 +148,11 @@ export type * from './types'
 
 export default spawn
 
+type SyncDefaults = {
+  encoding: 'utf-8'
+  stdio: 'inherit'
+}
+
 /**
  * The `spawnSync` function is purpose-built for replacing Shell scripts with
  * Node.js by providing a simple way to block on a child process and exit with
@@ -169,11 +174,22 @@ export default spawn
  * Pass `trimEnd: false` to prevent the stdout from being trimmed. This option
  * does nothing if stdout is a Buffer.
  */
-export function spawnSync<Options extends PicospawnSyncOptions>(
+export function spawnSync<Options extends PicospawnSyncOptions = SyncDefaults>(
   command: string,
-  args?: PicospawnArgs | Options,
   options?: Options
-): PicospawnSyncResult<Options> {
+): PicospawnSyncResult<Options>
+
+export function spawnSync<Options extends PicospawnSyncOptions = SyncDefaults>(
+  command: string,
+  args?: PicospawnArgs,
+  options?: Options
+): PicospawnSyncResult<Options>
+
+export function spawnSync(
+  command: string,
+  args?: PicospawnArgs | PicospawnSyncOptions,
+  options?: PicospawnSyncOptions
+): PicospawnSyncResult<PicospawnSyncOptions> {
   const result = run(nodeSpawnSync, command, args, options, {
     stdio: 'inherit',
     encoding: 'utf-8',
@@ -195,9 +211,9 @@ export function spawnSync<Options extends PicospawnSyncOptions>(
       }
       process.exit(code)
     }
-    return result.stdout as any
+    return result.stdout
   }
-  return result as any
+  return result
 }
 
 if (typeof module !== 'undefined') {
