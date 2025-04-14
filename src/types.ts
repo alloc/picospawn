@@ -6,7 +6,17 @@ export interface ChildProcessError extends Error {
 }
 
 export interface TinyspawnOptions extends SpawnOptions {
+  /**
+   * Set this to `true` to parse the stdout as JSON.
+   */
   json?: boolean
+  /**
+   * Set this to `false` to prevent the promise from rejecting when the child
+   * process exits unexpectedly. Instead, the `TinyspawnResult` will have an
+   * `error` property.
+   *
+   * @default true
+   */
   reject?: boolean
 }
 
@@ -24,7 +34,10 @@ export interface TinyspawnResult<Stdout = string>
   extends Omit<ChildProcess, 'stdout' | 'stderr'> {
   stdout: Stdout
   stderr: string
-  /** Only exists if `reject` was false and the child process exited with a non-zero code. */
+  /**
+   * Only exists if `reject` was false and the child process exited with a
+   * non-zero code.
+   */
   error?: ChildProcessError
 }
 
