@@ -45,7 +45,7 @@ import { spawnSync as $ } from 'picospawn'
 
 // By default, spawnSync exits the parent process if the child fails.
 // Stdout is returned directly.
-const stdout = $('echo "hello world"')
+const stdout = $('echo', ['hello world'])
 console.log(stdout) // Output: hello world
 
 // To prevent exiting on failure and get the full result object:
@@ -72,8 +72,13 @@ You can even use `%s` placeholders if only one or a few arguments need to be int
 ```ts
 import $ from 'picospawn'
 
-const proc = $('echo %s', ['hello world'])
+await $('echo %s baz', ['foo bar'], { stdio: 'inherit' })
+// Output: foo bar baz
 ```
+
+Note that placeholders are unnecessary at the end of the command string.
+
+Any extra arguments are included at the end of the command. In other words, you can specify arguments within the command string _and_ pass an array of extra arguments too.
 
 #### Await the result or process the output stream.
 
