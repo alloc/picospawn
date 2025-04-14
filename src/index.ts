@@ -150,16 +150,24 @@ export default spawn
 
 /**
  * The `spawnSync` function is purpose-built for replacing Shell scripts with
- * Node.js by providing a simple way to block on a child process, exit if it
- * fails, and return its output as a string.
+ * Node.js by providing a simple way to block on a child process and exit with
+ * the same signal or non-zero status code as the child process.
  *
  * Its call signature is identical to picospawn's `spawn` functions.
  *
  * I recommend importing it like this: `{ spawnSync as $ }`
  *
- * Set the `exit` option to `false` to prevent the current process from exiting
- * when the child process exits unexpectedly. It also affects the return type of
- * the function.
+ * ### Options
+ *
+ * Pass `stdio: "pipe"` to get the stdout and stderr as strings. Pass `encoding:
+ * null` to get a Buffer.
+ *
+ * Pass `exit: false` to prevent the current process from exiting when the child
+ * process fails. This also changes the return type to a `SpawnSyncReturns`
+ * object.
+ *
+ * Pass `trimEnd: false` to prevent the stdout from being trimmed. This option
+ * does nothing if stdout is a Buffer.
  */
 export function spawnSync<Options extends PicospawnSyncOptions>(
   command: string,

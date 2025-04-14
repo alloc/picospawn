@@ -56,13 +56,26 @@ export interface PicospawnSyncOptions extends SpawnOptions {
   trimEnd?: boolean
 }
 
-export type PicospawnSyncResult<Options extends PicospawnSyncOptions> = (
-  Options['encoding'] extends 'buffer' | null ? Buffer : string
-) extends infer TStdout
-  ? Options['exit'] extends false
-    ? SpawnSyncReturns<TStdout>
-    : TStdout
-  : never
+type A = PicospawnSyncResult<{ stdio: 'inherit' | 'pipe'; exit: false }>
+
+export type PicospawnSyncResult<Options extends PicospawnSyncOptions> =
+  Options extends {
+    stdio?: infer TStdio
+    encoding?: infer TEncoding
+    exit?: infer TExitOption
+  }
+    ? (
+        TStdio extends 'pipe'
+          ? TEncoding extends 'buffer' | null
+            ? Buffer
+            : string
+          : null
+      ) extends infer TStdout
+      ? TExitOption extends false
+        ? SpawnSyncReturns<TStdout>
+        : TStdout
+      : never
+    : never
 
 export interface PicospawnResult<Stdout = string>
   extends Omit<ChildProcess, 'stdout' | 'stderr'> {

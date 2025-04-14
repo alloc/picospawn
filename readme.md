@@ -36,7 +36,9 @@ result.stderr // string
 
 ### Synchronous (`spawnSync`)
 
-The `spawnSync` function is purpose-built for replacing Shell scripts with Node.js by providing a simple way to block on a child process, exit if it fails, and return its output as a string.
+The `spawnSync` function is purpose-built for replacing Shell scripts with Node.js by providing a simple way to block on a child process and exit with the same signal or non-zero status code as the child process.
+
+Notably, `spawnSync` defaults to using `stdio: "inherit"` and `encoding: "utf-8"`. You can override these by passing an options object.
 
 I recommend importing it like this: `{ spawnSync as $ }`
 
@@ -45,7 +47,7 @@ import { spawnSync as $ } from 'picospawn'
 
 // By default, spawnSync exits the parent process if the child fails.
 // Stdout is returned directly.
-const stdout = $('echo', ['hello world'])
+const stdout = $('echo', ['hello world'], { stdio: 'pipe' })
 console.log(stdout) // Output: hello world
 
 // To prevent exiting on failure and get the full result object:
