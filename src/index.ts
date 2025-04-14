@@ -174,11 +174,12 @@ export function spawnSync<Options extends PicospawnSyncOptions>(
     if (result.stderr?.length) {
       console.error(result.stderr.toString())
     }
-    if (result.signal) {
-      process.exit(result.signal)
-    }
-    if (result.status !== 0) {
-      process.exit(result.status)
+    const code = result.signal ?? result.status
+    if (code) {
+      if (process.env.PICOSPAWN_TRACE) {
+        console.trace()
+      }
+      process.exit(code)
     }
     return result.stdout as any
   }
