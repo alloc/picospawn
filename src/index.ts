@@ -173,6 +173,9 @@ export function spawnSync<Options extends PicospawnSyncOptions>(
   if (!options && !isArray(args)) {
     options = args
   }
+  if (options?.trimEnd !== false && typeof result.stdout === 'string') {
+    result.stdout = result.stdout.trimEnd()
+  }
   if (options?.exit !== false) {
     if (result.stderr?.length) {
       console.error(result.stderr.toString())

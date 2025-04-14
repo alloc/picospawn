@@ -47,6 +47,13 @@ export interface PicospawnSyncOptions extends SpawnOptions {
    * @default true
    */
   exit?: boolean
+  /**
+   * Set this to `false` to prevent the stdout from being trimmed. This option
+   * does nothing if stdout is a Buffer.
+   *
+   * @default true
+   */
+  trimEnd?: boolean
 }
 
 export type PicospawnSyncResult<Options extends PicospawnSyncOptions> = (
