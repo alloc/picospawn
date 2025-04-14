@@ -1,6 +1,10 @@
 # picospawn
 
-Minimalist `spawn` replacement with a focus on simplicity and ease of use.
+Minimalist `spawn` and `spawnSync` replacements with a focus on simplicity and ease of use.
+
+- ESM and CommonJS compatible.
+- Excellent TypeScript support.
+- …and a list of [features](#features) below.
 
 ```
 pnpm add picospawn
@@ -53,15 +57,94 @@ When using `spawnSync`, it can sometimes be difficult to determine which command
 
 ## Features
 
-- Pass a single string or an array of arguments to the command.
-- Asynchronous `spawn`: Returns a promise that resolves to a `PicospawnResult` object, which also behaves like the underlying `ChildProcess`.
-- Synchronous `spawnSync`: Blocks until the process completes, ideal for scripting. Exits the parent process on error by default.
-- Parse the stdout as JSON with `json: true` or `$.json()`.
-- Throw an error if the command exits with a non-zero code (async only). Opt-out with `reject: false`.
-- Set default options with `$.extend()`.
-- Excellent TypeScript support.
-- ESM and CommonJS compatible.
-- …and more!
+#### The argument array is optional.
+
+You can pass a single string or an array of arguments to the command.
+
+```ts
+import $ from 'picospawn'
+
+const proc = $('echo "hello world"')
+```
+
+You can even use `%s` placeholders if only one or a few arguments need to be interpolated. This is especially useful for arguments that could contain spaces or special characters.
+
+```ts
+import $ from 'picospawn'
+
+const proc = $('echo %s', ['hello world'])
+```
+
+#### Await the result or process the output stream.
+
+You can either wait for the child process to exit and get the result, or process the output stream as it's received.
+
+```ts
+import $ from 'picospawn'
+
+// Process the output stream as it's received.
+const proc = $('ls -l /')
+proc.stdout?.on('data', chunk => console.log(chunk))
+
+// Wait for the child process to exit and get the result.
+const result = await proc
+result.stdout // string
+result.stderr // string
+```
+
+#### Parse the stdout as JSON.
+
+You can parse the stdout as JSON by setting `json: true` or by calling `$.json()`.
+
+```ts
+import $ from 'picospawn'
+
+type Result = { foo: 'bar' }
+
+const { stdout } = await $<Result>(`echo '{"foo": "bar"}'`, {
+  json: true,
+})
+
+console.log(stdout.foo) // Output: bar
+
+// Alternative syntax.
+const { stdout } = await $.json<Result>(`echo '{"foo": "bar"}'`)
+
+console.log(stdout.foo) // Output: bar
+```
+
+#### Set default options.
+
+You can set default options with `$.extend()`.
+
+```ts
+import $ from 'picospawn'
+
+const customSpawn = $.extend({
+  cwd: '/tmp',
+  env: { ...process.env, FOO: 'bar' },
+  shell: true,
+})
+
+const { stdout } = await customSpawn('echo $PWD $FOO')
+console.log(stdout) // Output: /tmp bar
+```
+
+#### Prevent rejection on error.
+
+By default, `spawn` will reject its promise if the command exits unexpectedly. You can opt-out by setting `reject: false`.
+
+```ts
+import $ from 'picospawn'
+
+const proc = $('exit 1', { reject: false })
+proc.on('exit', code => {
+  console.log(code) // Output: 1
+})
+
+const { exitCode } = await proc
+console.log(exitCode) // Output: 1
+```
 
 ## Prior Art
 
