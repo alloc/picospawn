@@ -1,4 +1,8 @@
-import { ChildProcess, SpawnOptions } from 'node:child_process'
+import {
+  ChildProcess,
+  SpawnOptions,
+  SpawnSyncReturns,
+} from 'node:child_process'
 
 export interface ChildProcessError extends Error {
   name: 'ChildProcessError'
@@ -30,6 +34,13 @@ export interface PicospawnOptions extends SpawnOptions {
 
 export interface PicospawnSyncOptions extends SpawnOptions {
   /**
+   * Control the encoding of the stdout and stderr. Set to `null` or `"buffer"`
+   * to return a Buffer.
+   *
+   * @default 'utf-8'
+   */
+  encoding?: BufferEncoding | 'buffer' | null
+  /**
    * Set this to `false` to prevent the current process from exiting when the
    * child process exits unexpectedly.
    *
@@ -37,6 +48,14 @@ export interface PicospawnSyncOptions extends SpawnOptions {
    */
   exit?: boolean
 }
+
+export type PicospawnSyncResult<Options extends PicospawnSyncOptions> = (
+  Options['encoding'] extends 'buffer' | null ? Buffer : string
+) extends infer TStdout
+  ? Options['exit'] extends false
+    ? SpawnSyncReturns<TStdout>
+    : TStdout
+  : never
 
 export interface PicospawnResult<Stdout = string>
   extends Omit<ChildProcess, 'stdout' | 'stderr'> {

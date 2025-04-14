@@ -2,7 +2,6 @@ import {
   ChildProcess,
   spawn as nodeSpawn,
   spawnSync as nodeSpawnSync,
-  SpawnSyncReturns,
 } from 'node:child_process'
 import { EOL } from 'node:os'
 import {
@@ -12,6 +11,7 @@ import {
   PicospawnOptions,
   PicospawnPromise,
   PicospawnSyncOptions,
+  PicospawnSyncResult,
 } from './types'
 
 const isArray = Array.isArray as (value: unknown) => value is readonly unknown[]
@@ -165,7 +165,7 @@ export function spawnSync<Options extends PicospawnSyncOptions>(
   command: string,
   args?: PicospawnArgs | Options,
   options?: Options
-): Options['exit'] extends false ? SpawnSyncReturns<string> : string {
+): PicospawnSyncResult<Options> {
   const result = run(nodeSpawnSync, command, args, options, {
     stdio: 'inherit',
     encoding: 'utf-8',
