@@ -7,10 +7,10 @@ import {
 import { EOL } from 'node:os'
 import {
   ChildProcessError,
-  Tinyspawn,
-  TinyspawnOptions,
-  TinyspawnPromise,
-  TinyspawnSyncOptions,
+  Picospawn,
+  PicospawnOptions,
+  PicospawnPromise,
+  PicospawnSyncOptions,
 } from './types'
 
 // The function responsible for processing the spawn arguments before passing
@@ -82,11 +82,11 @@ const defineOutputProperty = (
   })
 
 const createAsyncSpawn =
-  (defaultOptions?: TinyspawnOptions) =>
+  (defaultOptions?: PicospawnOptions) =>
   (
     command: string,
-    args?: (string | false | null | undefined)[] | TinyspawnOptions,
-    options?: TinyspawnOptions
+    args?: (string | false | null | undefined)[] | PicospawnOptions,
+    options?: PicospawnOptions
   ) => {
     const proc = run(
       nodeSpawn,
@@ -127,15 +127,15 @@ const createAsyncSpawn =
         const value = resolve(proc, prop)
         return value !== undefined ? value : resolve(target, prop)
       },
-    }) as TinyspawnPromise
+    }) as PicospawnPromise
   }
 
-const spawn = createAsyncSpawn() as Tinyspawn<string> & {
+const spawn = createAsyncSpawn() as Picospawn<string> & {
   extend(
-    defaults?: TinyspawnOptions & { json?: false | undefined }
-  ): Tinyspawn<string>
-  extend(defaults: TinyspawnOptions & { json: boolean }): Tinyspawn<unknown>
-  json: Tinyspawn<unknown>
+    defaults?: PicospawnOptions & { json?: false | undefined }
+  ): Picospawn<string>
+  extend(defaults: PicospawnOptions & { json: boolean }): Picospawn<unknown>
+  json: Picospawn<unknown>
 }
 
 spawn.extend = createAsyncSpawn
@@ -158,7 +158,7 @@ export default spawn
  * when the child process exits unexpectedly. It also affects the return type of
  * the function.
  */
-export function spawnSync<Options extends TinyspawnSyncOptions>(
+export function spawnSync<Options extends PicospawnSyncOptions>(
   command: string,
   args?: (string | false)[] | Options,
   options?: Options

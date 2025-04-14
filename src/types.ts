@@ -5,7 +5,7 @@ export interface ChildProcessError extends Error {
   proc: ChildProcess
 }
 
-export interface TinyspawnOptions extends SpawnOptions {
+export interface PicospawnOptions extends SpawnOptions {
   /**
    * Set this to `true` to parse the stdout as JSON.
    */
@@ -20,7 +20,7 @@ export interface TinyspawnOptions extends SpawnOptions {
   reject?: boolean
 }
 
-export interface TinyspawnSyncOptions extends SpawnOptions {
+export interface PicospawnSyncOptions extends SpawnOptions {
   /**
    * Set this to `false` to prevent the current process from exiting when the
    * child process exits unexpectedly.
@@ -30,7 +30,7 @@ export interface TinyspawnSyncOptions extends SpawnOptions {
   exit?: boolean
 }
 
-export interface TinyspawnResult<Stdout = string>
+export interface PicospawnResult<Stdout = string>
   extends Omit<ChildProcess, 'stdout' | 'stderr'> {
   stdout: Stdout
   stderr: string
@@ -41,49 +41,49 @@ export interface TinyspawnResult<Stdout = string>
   error?: ChildProcessError
 }
 
-export interface TinyspawnPromise<Stdout = string>
-  extends Promise<TinyspawnResult<Stdout>>,
+export interface PicospawnPromise<Stdout = string>
+  extends Promise<PicospawnResult<Stdout>>,
     ChildProcess {}
 
-export type Tinyspawn<StdoutDefault> = [StdoutDefault] extends [string]
+export type Picospawn<StdoutDefault> = [StdoutDefault] extends [string]
   ? {
       (
         input: string,
         args?: (string | false | null | undefined)[],
-        options?: TinyspawnOptions & { json?: false | undefined }
-      ): TinyspawnPromise<string>
+        options?: PicospawnOptions & { json?: false | undefined }
+      ): PicospawnPromise<string>
 
       (
         input: string,
-        options?: TinyspawnOptions & { json?: false | undefined }
-      ): TinyspawnPromise<string>
+        options?: PicospawnOptions & { json?: false | undefined }
+      ): PicospawnPromise<string>
 
       <Stdout = unknown>(
         input: string,
         args: (string | false | null | undefined)[] | undefined,
-        options: TinyspawnOptions & { json: boolean }
-      ): TinyspawnPromise<Stdout>
+        options: PicospawnOptions & { json: boolean }
+      ): PicospawnPromise<Stdout>
 
       <Stdout = unknown>(
         input: string,
-        options: TinyspawnOptions & { json: boolean }
-      ): TinyspawnPromise<Stdout>
+        options: PicospawnOptions & { json: boolean }
+      ): PicospawnPromise<Stdout>
     }
   : {
       (
         input: string,
         args: (string | false | null | undefined)[] | undefined,
-        options: TinyspawnOptions & { json: false }
-      ): TinyspawnPromise<string>
+        options: PicospawnOptions & { json: false }
+      ): PicospawnPromise<string>
 
       (
         input: string,
-        options: TinyspawnOptions & { json: false }
-      ): TinyspawnPromise<string>
+        options: PicospawnOptions & { json: false }
+      ): PicospawnPromise<string>
 
       <Stdout = StdoutDefault>(
         input: string,
-        args?: (string | false | null | undefined)[] | TinyspawnOptions,
-        options?: TinyspawnOptions
-      ): TinyspawnPromise<Stdout>
+        args?: (string | false | null | undefined)[] | PicospawnOptions,
+        options?: PicospawnOptions
+      ): PicospawnPromise<Stdout>
     }
