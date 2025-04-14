@@ -56,8 +56,6 @@ export interface PicospawnSyncOptions extends SpawnOptions {
   trimEnd?: boolean
 }
 
-type A = PicospawnSyncResult<{ stdio: 'inherit' | 'pipe'; exit: false }>
-
 export type PicospawnSyncResult<Options extends PicospawnSyncOptions> =
   Options extends {
     stdio?: infer TStdio
