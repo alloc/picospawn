@@ -49,6 +49,8 @@ const result = $('exit 1', { exit: false })
 console.log(result.status) // Output: 1
 ```
 
+When using `spawnSync`, it can sometimes be difficult to determine which command failed. If you set `PICOSPAWN_TRACE=1` in your environment, the stack trace will be printed to the console.
+
 ## Features
 
 - Pass a single string or an array of arguments to the command.
