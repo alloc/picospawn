@@ -8,24 +8,27 @@ import { EOL } from 'node:os'
 import {
   ChildProcessError,
   Picospawn,
+  PicospawnArgs,
   PicospawnOptions,
   PicospawnPromise,
   PicospawnSyncOptions,
 } from './types'
+
+const isArray = Array.isArray as (value: unknown) => value is readonly unknown[]
 
 // The function responsible for processing the spawn arguments before passing
 // them to the native spawn function.
 function run<TOptions, TResult>(
   spawn: (command: string, args: string[], options: TOptions) => TResult,
   command: string,
-  args?: (string | false | null | undefined)[] | TOptions,
+  args?: PicospawnArgs | TOptions,
   options?: TOptions,
   defaultOptions?: TOptions
 ): TResult {
   let stringArgs: string[] | undefined
   if (args) {
-    if (Array.isArray(args)) {
-      stringArgs = args.filter(Boolean) as string[]
+    if (isArray(args)) {
+      stringArgs = args.flat(10).filter(Boolean) as string[]
     } else {
       options = args
     }
@@ -85,7 +88,7 @@ const createAsyncSpawn =
   (defaultOptions?: PicospawnOptions) =>
   (
     command: string,
-    args?: (string | false | null | undefined)[] | PicospawnOptions,
+    args?: PicospawnArgs | PicospawnOptions,
     options?: PicospawnOptions
   ) => {
     const proc = run(
@@ -160,14 +163,14 @@ export default spawn
  */
 export function spawnSync<Options extends PicospawnSyncOptions>(
   command: string,
-  args?: (string | false)[] | Options,
+  args?: PicospawnArgs | Options,
   options?: Options
 ): Options['exit'] extends false ? SpawnSyncReturns<string> : string {
   const result = run(nodeSpawnSync, command, args, options, {
     stdio: 'inherit',
     encoding: 'utf-8',
   })
-  if (!options && !Array.isArray(args)) {
+  if (!options && !isArray(args)) {
     options = args
   }
   if (options?.exit !== false) {

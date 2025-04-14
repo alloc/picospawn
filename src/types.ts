@@ -5,6 +5,14 @@ export interface ChildProcessError extends Error {
   proc: ChildProcess
 }
 
+export type PicospawnArgs = readonly (
+  | string
+  | false
+  | null
+  | undefined
+  | PicospawnArgs
+)[]
+
 export interface PicospawnOptions extends SpawnOptions {
   /**
    * Set this to `true` to parse the stdout as JSON.
