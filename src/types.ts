@@ -138,13 +138,8 @@ export type Picospawn<StdoutDefault> = [StdoutDefault] extends [string]
 
       <Stdout = unknown>(
         input: string,
-        args: (string | false | null | undefined)[] | undefined,
-        options: PicospawnOptions & { json: boolean }
-      ): PicospawnPromise<Stdout>
-
-      <Stdout = unknown>(
-        input: string,
-        options: PicospawnOptions & { json: boolean }
+        args?: (string | false | null | undefined)[] | PicospawnOptions,
+        options?: PicospawnOptions
       ): PicospawnPromise<Stdout>
     }
   : {
