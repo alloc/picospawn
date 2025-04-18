@@ -120,20 +120,20 @@ const { stdout } = await $.json<Result>(`echo '{"foo": "bar"}'`)
 console.log(stdout.foo) // Output: bar
 ```
 
-#### Set default options.
+#### Create specialized spawn functions.
 
-You can set default options with `$.extend()`.
+You can create specialized spawn functions with `createSpawn()`.
 
 ```ts
-import $ from 'picospawn'
+import { createSpawn } from 'picospawn'
 
-const customSpawn = $.extend({
+const $ = createSpawn({
   cwd: '/tmp',
   env: { ...process.env, FOO: 'bar' },
   shell: true,
 })
 
-const { stdout } = await customSpawn('echo $PWD $FOO')
+const { stdout } = await $('echo $PWD $FOO')
 console.log(stdout) // Output: /tmp bar
 ```
 
@@ -162,6 +162,26 @@ import $ from 'picospawn'
 
 const { stdout } = await $('echo %s baz', ['foo bar', ['qux']])
 console.log(stdout) // Output: foo bar baz qux
+```
+
+#### Transform stdio streams.
+
+You can pass functions in the `stdio` array to transform the data as it streams.
+
+```ts
+import $ from 'picospawn'
+
+async function* addPrefix(stream) {
+  for await (const chunk of stream) {
+    yield '>> ' + chunk
+  }
+}
+
+// Pipe stdout through the addPrefix transformer.
+await $('echo hello world', {
+  stdio: ['inherit', addPrefix, 'inherit'],
+})
+// Output: >> hello world
 ```
 
 ## Prior Art
