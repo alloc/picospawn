@@ -2,8 +2,11 @@ import {
   ChildProcess,
   spawn as nodeSpawn,
   spawnSync as nodeSpawnSync,
+  StdioOptions,
 } from 'node:child_process'
 import { EOL } from 'node:os'
+import { Writable } from 'node:stream'
+import { createAsyncGeneratorStream } from './stream'
 import {
   ChildProcessError,
   Picospawn,
@@ -84,6 +87,42 @@ const defineOutputProperty = (
     get: () => (options?.json ? JSON.parse(read()) : read()),
   })
 
+// Handle custom options for stdio.
+function wrappedNodeSpawn(
+  command: string,
+  args: string[],
+  options: PicospawnOptions
+) {
+  let streams: Writable[] | undefined
+  let stdio: StdioOptions | undefined
+  if (isArray(options.stdio)) {
+    stdio = options.stdio.map((option, index) => {
+      if (typeof option === 'function') {
+        streams ||= []
+        streams[index] = createAsyncGeneratorStream(
+          option,
+          [process.stdin, process.stdout, process.stderr][index]
+        )
+        return 'pipe'
+      }
+      return option
+    })
+  } else {
+    stdio = options.stdio
+  }
+
+  const proc = nodeSpawn(command, args, {
+    ...options,
+    stdio,
+  })
+
+  streams?.forEach((stream, index) => {
+    proc.stdio[index]!.pipe(stream)
+  })
+
+  return proc
+}
+
 export const createSpawn: {
   (
     defaults?: PicospawnOptions & { json?: false | undefined }
@@ -97,7 +136,7 @@ export const createSpawn: {
     options?: PicospawnOptions
   ) => {
     const proc = run(
-      nodeSpawn,
+      wrappedNodeSpawn,
       command,
       args,
       options,

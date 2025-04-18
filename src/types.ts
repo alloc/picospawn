@@ -1,8 +1,16 @@
 import {
   ChildProcess,
+  IOType,
   SpawnOptions,
   SpawnSyncReturns,
+  StdioOptions,
 } from 'node:child_process'
+
+type Stdio = Extract<StdioOptions, any[]>[number]
+
+export type PicospawnStdio =
+  | ((chunk: unknown) => AsyncGenerator<unknown, void, void>)
+  | Stdio
 
 export interface ChildProcessError extends Error {
   name: 'ChildProcessError'
@@ -17,7 +25,7 @@ export type PicospawnArgs = readonly (
   | PicospawnArgs
 )[]
 
-export interface PicospawnOptions extends SpawnOptions {
+export interface PicospawnOptions extends Omit<SpawnOptions, 'stdio'> {
   /**
    * Set this to `true` to parse the stdout as JSON.
    */
@@ -30,6 +38,29 @@ export interface PicospawnOptions extends SpawnOptions {
    * @default true
    */
   reject?: boolean
+  /**
+   * Can be set to 'pipe', 'inherit', 'overlapped', or 'ignore', or an array of
+   * these strings.
+   *
+   * If passed as an array, the first element is used for `stdin`, the second
+   * for `stdout`, and the third for `stderr`. A fourth element can be used to
+   * specify the `stdio` behavior beyond the standard streams. See
+   * {@link ChildProcess.stdio} for more information.
+   *
+   * Setting a particular `stdio` element to a function will cause the child
+   * process to be streamed to the function. You can transform the data as it
+   * streams in and before it's piped to the destination.
+   *
+   * @default 'pipe'
+   */
+  stdio?:
+    | IOType
+    | [
+        stdin: PicospawnStdio,
+        stdout: PicospawnStdio,
+        stderr: PicospawnStdio,
+        extra?: Stdio,
+      ]
 }
 
 export interface PicospawnSyncOptions extends SpawnOptions {
@@ -63,11 +94,13 @@ export type PicospawnSyncResult<Options extends PicospawnSyncOptions> =
     exit?: infer TExitOption
   }
     ? (
-        TStdio extends 'pipe'
-          ? TEncoding extends 'buffer' | null
-            ? Buffer
-            : string
-          : null
+        TStdio extends any[]
+          ? unknown
+          : TStdio extends 'pipe'
+            ? TEncoding extends 'buffer' | null
+              ? Buffer
+              : string
+            : null
       ) extends infer TStdout
       ? TExitOption extends false
         ? SpawnSyncReturns<TStdout>
