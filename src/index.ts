@@ -84,7 +84,12 @@ const defineOutputProperty = (
     get: () => (options?.json ? JSON.parse(read()) : read()),
   })
 
-const createAsyncSpawn =
+export const createSpawn: {
+  (
+    defaults?: PicospawnOptions & { json?: false | undefined }
+  ): Picospawn<string>
+  (defaults: PicospawnOptions & { json: boolean }): Picospawn<unknown>
+} =
   (defaultOptions?: PicospawnOptions) =>
   (
     command: string,
@@ -133,16 +138,11 @@ const createAsyncSpawn =
     }) as PicospawnPromise
   }
 
-const spawn = createAsyncSpawn() as Picospawn<string> & {
-  extend(
-    defaults?: PicospawnOptions & { json?: false | undefined }
-  ): Picospawn<string>
-  extend(defaults: PicospawnOptions & { json: boolean }): Picospawn<unknown>
+const spawn = createSpawn() as Picospawn<string> & {
   json: Picospawn<unknown>
 }
 
-spawn.extend = createAsyncSpawn
-spawn.json = createAsyncSpawn({ json: true })
+spawn.json = createSpawn({ json: true })
 
 export type * from './types'
 
@@ -220,4 +220,5 @@ if (typeof module !== 'undefined') {
   module.exports = spawn
   module.exports.default = spawn
   module.exports.spawnSync = spawnSync
+  module.exports.createSpawn = createSpawn
 }
