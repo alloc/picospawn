@@ -215,13 +215,13 @@ type SyncDefaults = {
  */
 export function spawnSync<Options extends PicospawnSyncOptions = SyncDefaults>(
   command: string,
-  options?: Options
+  options?: Options & PicospawnSyncOptions
 ): PicospawnSyncResult<Options>
 
 export function spawnSync<Options extends PicospawnSyncOptions = SyncDefaults>(
   command: string,
   args?: PicospawnArgs,
-  options?: Options
+  options?: Options & PicospawnSyncOptions
 ): PicospawnSyncResult<Options>
 
 export function spawnSync(
