@@ -19,35 +19,59 @@ import {
 
 const isArray = Array.isArray as (value: unknown) => value is readonly unknown[]
 
+// MIT – https://github.com/xxorax/node-shell-escape/blob/ebdb90e58050d74dbda9b8177f7de11cbb355d94/shell-escape.js
+function shellEscape(arg: string) {
+  if (arg && /[^A-Za-z0-9_\/:=-]/.test(arg)) {
+    arg = "'" + arg.replace(/'/g, "'\\''") + "'"
+
+    // unduplicate single-quote at the beginning
+    arg = arg.replace(/^(?:'')+/g, '')
+
+    // remove non-escaped single-quote if there are enclosed between 2 escaped
+    return arg.replace(/\\'''/g, "\\'")
+  }
+  return arg
+}
+
 // The function responsible for processing the spawn arguments before passing
 // them to the native spawn function.
-function run<TOptions, TResult>(
+function run<TOptions extends { shell?: string | boolean }, TResult>(
   spawn: (command: string, args: string[], options: TOptions) => TResult,
   command: string,
-  args?: PicospawnArgs | TOptions,
-  options?: TOptions,
+  overridesOrArgs?: PicospawnArgs | TOptions,
+  overrides?: TOptions,
   defaultOptions?: TOptions
 ): TResult {
-  let stringArgs: string[] | undefined
-  if (args) {
-    if (isArray(args)) {
-      stringArgs = args.flat(10).filter(Boolean) as string[]
-    } else {
-      options = args
-    }
+  let args: string[]
+  if (isArray(overridesOrArgs)) {
+    args = overridesOrArgs.flat(10).filter(Boolean) as string[]
+  } else {
+    overrides = overridesOrArgs
+    args = []
   }
-  if (command.includes(' ')) {
-    const args = command.split(' ')
-    for (let i: number; (i = args.indexOf('%s')) >= 0; ) {
-      args[i] = stringArgs?.shift() ?? ''
-    }
-    command = args.shift()!
-    stringArgs = stringArgs ? [...args, ...stringArgs] : args
-  }
-  return spawn(command, stringArgs ?? [], {
+
+  const options = {
     ...defaultOptions,
-    ...options,
-  } as TOptions)
+    ...overrides,
+  } as TOptions
+
+  // For shell mode, replace %s placeholders but don't split the command. This
+  // allows use of spaces in the command.
+  if (options.shell) {
+    command = command.replace(/%s\b/g, () => shellEscape(args.shift() || ''))
+  }
+  // Split the command into command and arguments.
+  else if (command.includes(' ')) {
+    let parsedArgs: string[]
+    ;[command, ...parsedArgs] = command.split(' ')
+
+    for (let i: number; (i = parsedArgs.indexOf('%s')) >= 0; ) {
+      parsedArgs[i] = args.shift() || ''
+    }
+    args = [...parsedArgs, ...args]
+  }
+
+  return spawn(command, args ?? [], options)
 }
 
 function streamToString(stream: NodeJS.ReadableStream | null) {
@@ -87,26 +111,6 @@ const defineOutputProperty = (
     get: () => (options?.json ? JSON.parse(read()) : read()),
   })
 
-// MIT – https://github.com/xxorax/node-shell-escape/blob/ebdb90e58050d74dbda9b8177f7de11cbb355d94/shell-escape.js
-function shellEscape(args: string[]) {
-  const escaped: string[] = []
-
-  args.forEach(arg => {
-    if (/[^A-Za-z0-9_\/:=-]/.test(arg)) {
-      arg = "'" + arg.replace(/'/g, "'\\''") + "'"
-
-      // unduplicate single-quote at the beginning
-      arg = arg.replace(/^(?:'')+/g, '')
-
-      // remove non-escaped single-quote if there are enclosed between 2 escaped
-      arg = arg.replace(/\\'''/g, "\\'")
-    }
-    escaped.push(arg)
-  })
-
-  return escaped.join(' ')
-}
-
 // Handle custom options for stdio.
 function wrappedNodeSpawn(
   command: string,
@@ -133,7 +137,7 @@ function wrappedNodeSpawn(
 
   // Avoid DEP0190 warning from Node.js
   if (options.shell && args.length) {
-    command = `${command} ${shellEscape(args)}`
+    command = `${command} ${args.map(shellEscape).join(' ')}`
     args = []
   }
 
@@ -224,7 +228,7 @@ function wrappedNodeSpawnSync(
 ) {
   // Avoid DEP0190 warning from Node.js
   if (options.shell && args.length) {
-    command = `${command} ${shellEscape(args)}`
+    command = `${command} ${args.map(shellEscape).join(' ')}`
     args = []
   }
 
