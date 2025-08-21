@@ -87,6 +87,26 @@ const defineOutputProperty = (
     get: () => (options?.json ? JSON.parse(read()) : read()),
   })
 
+// MIT – https://github.com/xxorax/node-shell-escape/blob/ebdb90e58050d74dbda9b8177f7de11cbb355d94/shell-escape.js
+function shellEscape(args: string[]) {
+  const escaped: string[] = []
+
+  args.forEach(arg => {
+    if (/[^A-Za-z0-9_\/:=-]/.test(arg)) {
+      arg = "'" + arg.replace(/'/g, "'\\''") + "'"
+
+      // unduplicate single-quote at the beginning
+      arg = arg.replace(/^(?:'')+/g, '')
+
+      // remove non-escaped single-quote if there are enclosed between 2 escaped
+      arg = arg.replace(/\\'''/g, "\\'")
+    }
+    escaped.push(arg)
+  })
+
+  return escaped.join(' ')
+}
+
 // Handle custom options for stdio.
 function wrappedNodeSpawn(
   command: string,
@@ -111,10 +131,15 @@ function wrappedNodeSpawn(
     stdio = options.stdio
   }
 
-  const proc = nodeSpawn(command, args, {
-    ...options,
-    stdio,
-  })
+  // Avoid DEP0190 warning from Node.js
+  if (options.shell && args.length) {
+    command = `${command} ${shellEscape(args)}`
+    args = []
+  }
+
+  const proc = args.length
+    ? nodeSpawn(command, args, { ...options, stdio })
+    : nodeSpawn(command, { ...options, stdio })
 
   streams?.forEach((stream, index) => {
     proc.stdio[index]!.pipe(stream)
@@ -192,6 +217,22 @@ type SyncDefaults = {
   stdio: 'inherit'
 }
 
+function wrappedNodeSpawnSync(
+  command: string,
+  args: string[],
+  options: PicospawnSyncOptions
+) {
+  // Avoid DEP0190 warning from Node.js
+  if (options.shell && args.length) {
+    command = `${command} ${shellEscape(args)}`
+    args = []
+  }
+
+  return args.length
+    ? nodeSpawnSync(command, args, options)
+    : nodeSpawnSync(command, options)
+}
+
 /**
  * The `spawnSync` function is purpose-built for replacing Shell scripts with
  * Node.js by providing a simple way to block on a child process and exit with
@@ -229,7 +270,7 @@ export function spawnSync(
   args?: PicospawnArgs | PicospawnSyncOptions,
   options?: PicospawnSyncOptions
 ): PicospawnSyncResult<PicospawnSyncOptions> {
-  const result = run(nodeSpawnSync, command, args, options, {
+  const result = run(wrappedNodeSpawnSync, command, args, options, {
     stdio: 'inherit',
     encoding: 'utf-8',
   })
