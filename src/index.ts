@@ -182,11 +182,14 @@ export const createSpawn: {
       })
     })
 
-    return Object.assign(proc, {
-      then: promise.then.bind(promise) as any,
-      catch: promise.catch.bind(promise) as any,
-      finally: promise.finally?.bind(promise) as any,
-      [Symbol.toStringTag]: 'PicospawnPromise',
+    return new Proxy(promise, {
+      get(target: any, prop: string | symbol) {
+        const resolve = (obj: any, prop: string | symbol, value = obj[prop]) =>
+          typeof value === 'function' ? value.bind(obj) : value
+
+        const value = resolve(proc, prop)
+        return value !== undefined ? value : resolve(target, prop)
+      },
     }) as PicospawnPromise
   }
 
