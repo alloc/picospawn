@@ -116,13 +116,16 @@ export const createSpawn: {
 } =
   (defaultOptions?: PicospawnOptions) =>
   (
-    ...params: [
-      command: string,
-      args?: PicospawnArgs | PicospawnOptions,
-      options?: PicospawnOptions,
-    ]
+    param1: string,
+    param2?: PicospawnArgs | PicospawnOptions,
+    param3?: PicospawnOptions
   ) => {
-    let [command, args, options] = resolveParams(...params, defaultOptions)
+    let [command, args, options] = resolveParams(
+      param1,
+      param2,
+      param3,
+      defaultOptions
+    )
 
     let streams: Writable[] | undefined
     let stdio: StdioOptions | undefined
@@ -235,13 +238,11 @@ export function spawnSync<Options extends PicospawnSyncOptions = SyncDefaults>(
 ): PicospawnSyncResult<Options>
 
 export function spawnSync(
-  ...params: [
-    command: string,
-    args?: PicospawnArgs | PicospawnSyncOptions,
-    options?: PicospawnSyncOptions,
-  ]
+  param1: string,
+  param2?: PicospawnArgs | PicospawnSyncOptions,
+  param3?: PicospawnSyncOptions
 ): PicospawnSyncResult<PicospawnSyncOptions> {
-  let [command, args, options] = resolveParams(...params, {
+  let [command, args, options] = resolveParams(param1, param2, param3, {
     stdio: 'inherit',
     encoding: 'utf-8',
   })
