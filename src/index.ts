@@ -33,15 +33,12 @@ function shellEscape(arg: string) {
   return arg
 }
 
-// The function responsible for processing the spawn arguments before passing
-// them to the native spawn function.
-function run<TOptions extends { shell?: string | boolean }, TResult>(
-  spawn: (command: string, args: string[], options: TOptions) => TResult,
+function resolveParams<TOptions extends { shell?: string | boolean }>(
   command: string,
   overridesOrArgs?: PicospawnArgs | TOptions,
   overrides?: TOptions,
   defaultOptions?: TOptions
-): TResult {
+) {
   let args: string[]
   if (isArray(overridesOrArgs)) {
     args = overridesOrArgs.flat(10).filter(Boolean) as string[]
@@ -71,7 +68,7 @@ function run<TOptions extends { shell?: string | boolean }, TResult>(
     args = [...parsedArgs, ...args]
   }
 
-  return spawn(command, args ?? [], options)
+  return [command, args || [], options] as const
 }
 
 function streamToString(stream: NodeJS.ReadableStream | null) {
@@ -111,47 +108,6 @@ const defineOutputProperty = (
     get: () => (options?.json ? JSON.parse(read()) : read()),
   })
 
-// Handle custom options for stdio.
-function wrappedNodeSpawn(
-  command: string,
-  args: string[],
-  options: PicospawnOptions
-) {
-  let streams: Writable[] | undefined
-  let stdio: StdioOptions | undefined
-  if (isArray(options.stdio)) {
-    stdio = options.stdio.map((option, index) => {
-      if (typeof option === 'function') {
-        streams ||= []
-        streams[index] = createAsyncGeneratorStream(
-          option,
-          [process.stdin, process.stdout, process.stderr][index]
-        )
-        return 'pipe'
-      }
-      return option
-    })
-  } else {
-    stdio = options.stdio
-  }
-
-  // Avoid DEP0190 warning from Node.js
-  if (options.shell && args.length) {
-    command = `${command} ${args.map(shellEscape).join(' ')}`
-    args = []
-  }
-
-  const proc = args.length
-    ? nodeSpawn(command, args, { ...options, stdio })
-    : nodeSpawn(command, { ...options, stdio })
-
-  streams?.forEach((stream, index) => {
-    proc.stdio[index]!.pipe(stream)
-  })
-
-  return proc
-}
-
 export const createSpawn: {
   (
     defaults?: PicospawnOptions & { json?: false | undefined }
@@ -160,19 +116,47 @@ export const createSpawn: {
 } =
   (defaultOptions?: PicospawnOptions) =>
   (
-    command: string,
-    args?: PicospawnArgs | PicospawnOptions,
-    options?: PicospawnOptions
+    ...params: [
+      command: string,
+      args?: PicospawnArgs | PicospawnOptions,
+      options?: PicospawnOptions,
+    ]
   ) => {
-    const proc = run(
-      wrappedNodeSpawn,
-      command,
-      args,
-      options,
-      defaultOptions
-    ) as ChildProcess & {
-      error?: Error
+    let [command, args, options] = resolveParams(...params, defaultOptions)
+
+    let streams: Writable[] | undefined
+    let stdio: StdioOptions | undefined
+    if (isArray(options.stdio)) {
+      stdio = options.stdio.map((option, index) => {
+        if (typeof option === 'function') {
+          streams ||= []
+          streams[index] = createAsyncGeneratorStream(
+            option,
+            [process.stdin, process.stdout, process.stderr][index]
+          )
+          return 'pipe'
+        }
+        return option
+      })
+    } else {
+      stdio = options.stdio
     }
+
+    // Avoid DEP0190 warning from Node.js
+    if (options.shell && args.length) {
+      command = `${command} ${args.map(shellEscape).join(' ')}`
+      args = []
+    }
+
+    const proc: ChildProcess & {
+      error?: Error
+    } = args.length
+      ? nodeSpawn(command, args, { ...options, stdio })
+      : nodeSpawn(command, { ...options, stdio })
+
+    streams?.forEach((stream, index) => {
+      proc.stdio[index]!.pipe(stream)
+    })
 
     const trace = new Error()
     const promise = new Promise<ChildProcess>((resolve, reject) => {
@@ -221,22 +205,6 @@ type SyncDefaults = {
   stdio: 'inherit'
 }
 
-function wrappedNodeSpawnSync(
-  command: string,
-  args: string[],
-  options: PicospawnSyncOptions
-) {
-  // Avoid DEP0190 warning from Node.js
-  if (options.shell && args.length) {
-    command = `${command} ${args.map(shellEscape).join(' ')}`
-    args = []
-  }
-
-  return args.length
-    ? nodeSpawnSync(command, args, options)
-    : nodeSpawnSync(command, options)
-}
-
 /**
  * The `spawnSync` function is purpose-built for replacing Shell scripts with
  * Node.js by providing a simple way to block on a child process and exit with
@@ -270,21 +238,32 @@ export function spawnSync<Options extends PicospawnSyncOptions = SyncDefaults>(
 ): PicospawnSyncResult<Options>
 
 export function spawnSync(
-  command: string,
-  args?: PicospawnArgs | PicospawnSyncOptions,
-  options?: PicospawnSyncOptions
+  ...params: [
+    command: string,
+    args?: PicospawnArgs | PicospawnSyncOptions,
+    options?: PicospawnSyncOptions,
+  ]
 ): PicospawnSyncResult<PicospawnSyncOptions> {
-  const result = run(wrappedNodeSpawnSync, command, args, options, {
+  let [command, args, options] = resolveParams(...params, {
     stdio: 'inherit',
     encoding: 'utf-8',
   })
-  if (!options && !isArray(args)) {
-    options = args
+
+  // Avoid DEP0190 warning from Node.js
+  if (options.shell && args.length) {
+    command = `${command} ${args.map(shellEscape).join(' ')}`
+    args = []
   }
-  if (options?.trimEnd !== false && typeof result.stdout === 'string') {
+
+  const result = args.length
+    ? nodeSpawnSync(command, args, options)
+    : nodeSpawnSync(command, options)
+
+  if (options.trimEnd !== false && typeof result.stdout === 'string') {
     result.stdout = result.stdout.trimEnd()
   }
-  if (options?.exit !== false) {
+
+  if (options.exit !== false) {
     if (result.stderr?.length) {
       console.error(result.stderr.toString())
     }
