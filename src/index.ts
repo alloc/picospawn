@@ -90,7 +90,6 @@ function decorateError(
   error.name = 'ChildProcessError'
   error.message = message
   Object.defineProperty(error, 'proc', {
-    enumerable: true,
     value: proc,
   })
 
