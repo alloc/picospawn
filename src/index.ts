@@ -279,6 +279,35 @@ export function spawnSync(
   return result
 }
 
+function jsonSync<Stdout = unknown>(
+  command: string,
+  options?: Omit<PicospawnSyncOptions, 'encoding' | 'stdio'>
+): Stdout
+
+function jsonSync<Stdout = unknown>(
+  command: string,
+  args?: PicospawnArgs,
+  options?: Omit<PicospawnSyncOptions, 'encoding' | 'stdio'>
+): Stdout
+
+function jsonSync(
+  param1: string,
+  param2?: PicospawnArgs | Omit<PicospawnSyncOptions, 'encoding' | 'stdio'>,
+  param3?: Omit<PicospawnSyncOptions, 'encoding' | 'stdio'>
+): unknown {
+  const stdout = isArray(param2)
+    ? spawnSync(param1, param2, { ...param3, stdio: 'pipe', exit: true })
+    : spawnSync(param1, { ...param2, stdio: 'pipe', exit: true })
+  try {
+    return JSON.parse(stdout)
+  } catch (error: any) {
+    error.stdout = stdout
+    throw error
+  }
+}
+
+spawnSync.json = jsonSync
+
 if (typeof module !== 'undefined') {
   module.exports = spawn
   module.exports.default = spawn
