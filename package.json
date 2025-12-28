@@ -1,7 +1,7 @@
 {
   "name": "picospawn",
   "type": "module",
-  "version": "0.3.10",
+  "version": "0.3.11",
   "main": "./dist/index.cjs",
   "types": "./dist/index.d.cts",
   "exports": {
